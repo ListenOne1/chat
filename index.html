@@ -48,7 +48,7 @@
         // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const messagesRef = ref(db, 'chat_messages'); // 設定資料庫資料夾名稱為 chat_messages
+        const messagesRef = ref(db, 'chat'); // 設定資料庫資料夾名稱為 chat
 
         // 取得 DOM 元素
         const chatBox = document.getElementById('chat-box');
