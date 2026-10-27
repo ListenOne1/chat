@@ -1,100 +1,102 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase 簡易聊天室測試</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 500px; margin: 20px auto; padding: 10px; }
-        #chat-box { height: 300px; border: 1px solid #ccc; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
-        .msg { margin-bottom: 8px; padding: 6px; border-radius: 4px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .msg .name { font-weight: bold; color: #333; margin-right: 5px; }
-        input, button { padding: 8px; font-size: 16px; }
-        #username { width: 20%; }
-        #message { width: 55%; }
-        button { width: 18%; cursor: pointer; }
-    </style>
-</head>
-<body>
 
-    <h2>💬 3-5人測試聊天室</h2>
-    
-    <!-- 聊天訊息顯示區 -->
-    <div id="chat-box"></div>
+<script type="module">
+    // 1. 匯入 Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+    import {
+        getDatabase,
+        ref,
+        push,
+        onChildAdded
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-database.js";
 
-    <!-- 輸入區 -->
-    <div>
-        <input type="text" id="username" placeholder="名字" value="路人">
-        <input type="text" id="message" placeholder="輸入訊息...">
-        <button id="send-btn">傳送</button>
-    </div>
+    // 2. Firebase 專案設定
+    const firebaseConfig = {
+          apiKey: "AIzaSyC3IhPshI7nKddCKa8YAjUHOimqCEtOALk",
+          authDomain: "my-chat-room-22d07.firebaseapp.com",
+          projectId: "my-chat-room-22d07",
+          storageBucket: "my-chat-room-22d07.firebasestorage.app",
+          messagingSenderId: "215467459535",
+          appId: "1:215467459535:web:f9dd8ef20eda907cc548ba",
+          measurementId: "G-HRGBYCXGVC"
+    };
 
-    <!-- 1. 載入 Firebase 核心與資料庫組件 (傳統相容版本) -->
-    <script src="https://cloudflare.com"></script>
-    <script src="https://cloudflare.com"></script>
+    // 3. 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
 
-    <!-- 2. 主要邏輯程式碼 -->
-    <script>
-        // === 請替換成你的 Firebase 配置 ===
-        const firebaseConfig = {
-              apiKey: "AIzaSyC3IhPshI7nKddCKa8YAjUHOimqCEtOALk",
-              authDomain: "my-chat-room-22d07.firebaseapp.com",
-              projectId: "my-chat-room-22d07",
-              storageBucket: "my-chat-room-22d07.firebasestorage.app",
-              messagingSenderId: "215467459535",
-              appId: "1:215467459535:web:f9dd8ef20eda907cc548ba",
-              measurementId: "G-HRGBYCXGVC"
-        };
+    // Analytics 僅在瀏覽器環境支援時初始化
+    if (typeof window !== "undefined") {
+        try {
+            const analytics = getAnalytics(app);
+        } catch (error) {
+            console.warn("Analytics 初始化失敗：", error);
+        }
+    }
 
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const messagesRef = db.ref('chat_messages'); // 設定資料庫名稱
+    // 4. 連接 Realtime Database
+    const db = getDatabase(app);
+    const messagesRef = ref(db, "chat_messages");
 
-        // 取得 DOM 元素
-        const chatBox = document.getElementById('chat-box');
-        const usernameInput = document.getElementById('username');
-        const messageInput = document.getElementById('message');
-        const sendBtn = document.getElementById('send-btn');
+    // 5. 取得 HTML 元素
+    const chatBox = document.getElementById("chat-box");
+    const usernameInput = document.getElementById("username");
+    const messageInput = document.getElementById("message");
+    const sendBtn = document.getElementById("send-btn");
 
-        // 1. 傳送訊息到 Firebase
-        function sendMessage() {
-            const name = usernameInput.value.trim();
-            const text = messageInput.value.trim();
+    // 6. 傳送訊息
+    async function sendMessage() {
+        const name = usernameInput.value.trim() || "路人";
+        const text = messageInput.value.trim();
 
-            if (text === '') return;
+        if (text === "") return;
 
-            // 將資料推送到 Firebase
-            messagesRef.push({
+        sendBtn.disabled = true;
+
+        try {
+            await push(messagesRef, {
                 username: name,
                 message: text,
                 timestamp: Date.now()
             });
 
-            messageInput.value = ''; // 清空輸入框
+            messageInput.value = "";
+        } catch (error) {
+            console.error("訊息傳送失敗：", error);
+            alert("訊息傳送失敗，請檢查資料庫設定與權限。");
+        } finally {
+            sendBtn.disabled = false;
         }
+    }
 
-        // 綁定點擊事件與 Enter 鍵
-        sendBtn.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
+    // 7. 綁定按鈕與 Enter 鍵
+    sendBtn.addEventListener("click", sendMessage);
 
-        // 2. 監聽 Firebase 資料庫的新增事件（自動更新畫面）
-        messagesRef.on('child_added', (snapshot) => {
-            const data = snapshot.val();
-            
-            // 建立訊息 HTML 元素
-            const msgDiv = document.createElement('div');
-            msgDiv.classList.add('msg');
-            msgDiv.innerHTML = `<span class="name">${data.username}:</span><span>${data.message}</span>`;
-            
-            // 加到聊天視窗中
-            chatBox.appendChild(msgDiv);
-            
-            // 自動捲動到最底部
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
-    </script>
-</body>
-</html>
+    messageInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+
+    // 8. 監聽新訊息
+    onChildAdded(messagesRef, (snapshot) => {
+        const data = snapshot.val();
+
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("msg");
+
+        const nameSpan = document.createElement("span");
+        nameSpan.classList.add("name");
+        nameSpan.textContent = `${data.username ?? "路人"}:`;
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = data.message ?? "";
+
+        msgDiv.appendChild(nameSpan);
+        msgDiv.appendChild(textSpan);
+        chatBox.appendChild(msgDiv);
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }, (error) => {
+        console.error("監聽訊息失敗：", error);
+    });
+</script>
