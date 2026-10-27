@@ -29,74 +29,72 @@
         <button id="send-btn">傳送</button>
     </div>
 
-    <!-- 載入 Firebase SDK (使用 V10 模組化版本) -->
-    <!-- 1. 載入 Firebase 核心與資料庫組件 (使用不需重導向的 CDN) -->
-<script src="https://cloudflare.com"></script>
-<script src="https://cloudflare.com"></script>
+    <!-- 1. 載入 Firebase 核心與資料庫組件 (傳統相容版本) -->
+    <script src="https://cloudflare.com"></script>
+    <script src="https://cloudflare.com"></script>
 
-<!-- 2. 主要邏輯程式碼 -->
-<script>
-    // === 請替換成你的 Firebase 配置 ===
-    const firebaseConfig = {
-      apiKey: "AIzaSyC3IhPshI7nKddCKa8YAjUHOimqCEtOALk",
-      authDomain: "my-chat-room-22d07.firebaseapp.com",
-      projectId: "my-chat-room-22d07",
-      storageBucket: "my-chat-room-22d07.firebasestorage.app",
-      messagingSenderId: "215467459535",
-      appId: "1:215467459535:web:f9dd8ef20eda907cc548ba",
-      measurementId: "G-HRGBYCXGVC"
-    };
+    <!-- 2. 主要邏輯程式碼 -->
+    <script>
+        // === 請替換成你的 Firebase 配置 ===
+        const firebaseConfig = {
+              apiKey: "AIzaSyC3IhPshI7nKddCKa8YAjUHOimqCEtOALk",
+              authDomain: "my-chat-room-22d07.firebaseapp.com",
+              projectId: "my-chat-room-22d07",
+              storageBucket: "my-chat-room-22d07.firebasestorage.app",
+              messagingSenderId: "215467459535",
+              appId: "1:215467459535:web:f9dd8ef20eda907cc548ba",
+              measurementId: "G-HRGBYCXGVC"
+        };
 
-    // 初始化 Firebase (注意：這裡的語法因為換了載入方式，微調成相容語法)
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const messagesRef = db.ref('chat_messages');
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const messagesRef = db.ref('chat_messages'); // 設定資料庫名稱
 
-    // 取得 DOM 元素
-    const chatBox = document.getElementById('chat-box');
-    const usernameInput = document.getElementById('username');
-    const messageInput = document.getElementById('message');
-    const sendBtn = document.getElementById('send-btn');
+        // 取得 DOM 元素
+        const chatBox = document.getElementById('chat-box');
+        const usernameInput = document.getElementById('username');
+        const messageInput = document.getElementById('message');
+        const sendBtn = document.getElementById('send-btn');
 
-    // 1. 傳送訊息到 Firebase
-    function sendMessage() {
-        const name = usernameInput.value.trim();
-        const text = messageInput.value.trim();
+        // 1. 傳送訊息到 Firebase
+        function sendMessage() {
+            const name = usernameInput.value.trim();
+            const text = messageInput.value.trim();
 
-        if (text === '') return;
+            if (text === '') return;
 
-        // 將資料推送到 Firebase
-        messagesRef.push({
-            username: name,
-            message: text,
-            timestamp: Date.now()
+            // 將資料推送到 Firebase
+            messagesRef.push({
+                username: name,
+                message: text,
+                timestamp: Date.now()
+            });
+
+            messageInput.value = ''; // 清空輸入框
+        }
+
+        // 綁定點擊事件與 Enter 鍵
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
         });
 
-        messageInput.value = ''; // 清空輸入框
-    }
-
-    // 綁定點擊事件與 Enter 鍵
-    sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
-
-    // 2. 監聽 Firebase 資料庫的新增事件
-    messagesRef.on('child_added', (snapshot) => {
-        const data = snapshot.val();
-        
-        // 建立訊息 HTML 元素
-        const msgDiv = document.createElement('div');
-        msgDiv.classList.add('msg');
-        msgDiv.innerHTML = `<span class="name">${data.username}:</span><span>${data.message}</span>`;
-        
-        // 加到聊天視窗中
-        chatBox.appendChild(msgDiv);
-        
-        // 自動捲動到最底部
-        chatBox.scrollTop = chatBox.scrollHeight;
-    });
-</script>
-
+        // 2. 監聽 Firebase 資料庫的新增事件（自動更新畫面）
+        messagesRef.on('child_added', (snapshot) => {
+            const data = snapshot.val();
+            
+            // 建立訊息 HTML 元素
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('msg');
+            msgDiv.innerHTML = `<span class="name">${data.username}:</span><span>${data.message}</span>`;
+            
+            // 加到聊天視窗中
+            chatBox.appendChild(msgDiv);
+            
+            // 自動捲動到最底部
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    </script>
 </body>
 </html>
