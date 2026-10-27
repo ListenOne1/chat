@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 簡易聊天室測試</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 20px auto; padding: 10px; }
+        #chat-box { height: 300px; border: 1px solid #ccc; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
+        .msg { margin-bottom: 8px; padding: 6px; border-radius: 4px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .msg .name { font-weight: bold; color: #333; margin-right: 5px; }
+        input, button { padding: 8px; font-size: 16px; }
+        #username { width: 20%; }
+        #message { width: 55%; }
+        button { width: 18%; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>💬 3-5人測試聊天室</h2>
+    
+    <!-- 聊天訊息顯示區 -->
+    <div id="chat-box"></div>
+
+    <!-- 輸入區 -->
+    <div>
+        <input type="text" id="username" placeholder="名字" value="路人">
+        <input type="text" id="message" placeholder="輸入訊息...">
+        <button id="send-btn">傳送</button>
+    </div>
+
+    <!-- 載入 Firebase SDK (使用 V10 模組化版本) -->
+    <script type="module">
+        import { initializeApp } from "https://gstatic.com";
+        import { getDatabase, ref, push, onChildAdded } from "https://gstatic.com";
+
+        // === 請替換成你的 Firebase 配置 ===
+        const firebaseConfig = {
+              apiKey: "AIzaSyC3IhPshI7nKddCKa8YAjUHOimqCEtOALk",
+              authDomain: "my-chat-room-22d07.firebaseapp.com",
+              projectId: "my-chat-room-22d07",
+              storageBucket: "my-chat-room-22d07.firebasestorage.app",
+              messagingSenderId: "215467459535",
+              appId: "1:215467459535:web:f9dd8ef20eda907cc548ba",
+              measurementId: "G-HRGBYCXGVC"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const messagesRef = ref(db, 'chat_messages'); // 設定資料庫資料夾名稱為 chat_messages
+
+        // 取得 DOM 元素
+        const chatBox = document.getElementById('chat-box');
+        const usernameInput = document.getElementById('username');
+        const messageInput = document.getElementById('message');
+        const sendBtn = document.getElementById('send-btn');
+
+        // 1. 傳送訊息到 Firebase
+        function sendMessage() {
+            const name = usernameInput.value.trim();
+            const text = messageInput.value.trim();
+
+            if (text === '') return;
+
+            // 將資料推送到 Firebase
+            push(messagesRef, {
+                username: name,
+                message: text,
+                timestamp: Date.now()
+            });
+
+            messageInput.value = ''; // 清空輸入框
+        }
+
+        // 綁定點擊事件與 Enter 鍵
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // 2. 監聽 Firebase 資料庫的新增事件（這就是自動更新的核心！）
+        onChildAdded(messagesRef, (snapshot) => {
+            const data = snapshot.val();
+            
+            // 建立訊息 HTML 元素
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('msg');
+            msgDiv.innerHTML = `<span class="name">${data.username}:</span><span>${data.message}</span>`;
+            
+            // 加到聊天視窗中
+            chatBox.appendChild(msgDiv);
+            
+            // 自動捲動到最底部
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    </script>
+</body>
+</html>
